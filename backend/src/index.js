@@ -1,6 +1,7 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import { ensureAdmin } from "./config/ensureAdmin.js";
 import { authRequired, loadActiveUser } from "./middleware/auth.js";
 import { errorHandler, notFound } from "./middleware/error.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -39,6 +40,13 @@ app.use(notFound);
 app.use(errorHandler);
 
 const port = Number(process.env.PORT) || 4000;
-app.listen(port, () => {
-  console.log(`API escuchando en http://localhost:${port}`);
-});
+
+ensureAdmin()
+  .catch((error) => {
+    console.error("No se pudo crear el usuario ADMIN:", error);
+  })
+  .finally(() => {
+    app.listen(port, () => {
+      console.log(`API escuchando en el puerto ${port}`);
+    });
+  });
