@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EMPLEADO
+}
+
+enum MovementType {
+  ENTRADA
+  SALIDA
+  AJUSTE
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  nombre       String
+  apellido     String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  telefono     String?
+  rol          Role     @default(EMPLEADO)
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  movements    InventoryMovement[]
+
+  @@map("users")
+}
+
+model Client {
+  id        Int       @id @default(autoincrement())
+  nombre    String
+  telefono  String?
+  email     String?
+  direccion String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  vehicles  Vehicle[]
+
+  @@map("clients")
+}
+
+model Vehicle {
+  id        Int     @id @default(autoincrement())
+  clienteId Int     @map("cliente_id")
+  cliente   Client  @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  marca     String
+  modelo    String
+  anio      Int     @map("anio")
+  version   String?
+  motor     String?
+  vin       String? @unique
+  placas    String?
+
+  @@map("vehicles")
+}
+
+model Supplier {
+  id        Int     @id @default(autoincrement())
+  nombre    String
+  empresa   String?
+  telefono  String?
+  email     String?
+  direccion String?
+  parts     Part[]
+
+  @@map("suppliers")
+}
+
+model Part {
+  id           Int      @id @default(autoincrement())
+  codigo       String   @unique
+  nombre       String
+  descripcion  String?
+  categoria    String?
+  marca        String?
+  precioCompra Decimal  @map("precio_compra") @db.Decimal(12, 2)
+  precioVenta  Decimal  @map("precio_venta") @db.Decimal(12, 2)
+  stock        Int      @default(0)
+  stockMinimo  Int      @default(0) @map("stock_minimo")
+  ubicacion    String?
+  proveedorId  Int?     @map("proveedor_id")
+  proveedor    Supplier? @relation(fields: [proveedorId], references: [id], onDelete: SetNull)
+  activo       Boolean  @default(true)
+  movements    InventoryMovement[]
+
+  @@map("parts")
+}
+
+model InventoryMovement {
+  id        Int           @id @default(autoincrement())
+  fecha     DateTime      @default(now())
+  tipo      MovementType
+  cantidad  Int
+  piezaId   Int           @map("pieza_id")
+  pieza     Part          @relation(fields: [piezaId], references: [id], onDelete: Restrict)
+  usuarioId Int           @map("usuario_id")
+  usuario   User          @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  nota      String?
+
+  @@map("inventory_movements")
+}
